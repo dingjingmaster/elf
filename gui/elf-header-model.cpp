@@ -6,6 +6,8 @@
 
 #include <QDebug>
 
+#include "macros.h"
+
 
 ElfHeaderModel::ElfHeaderModel(QObject* parent)
     : QAbstractTableModel(parent)
@@ -43,11 +45,13 @@ QVariant ElfHeaderModel::headerData(int section, Qt::Orientation orientation, in
 
 void ElfHeaderModel::addRow(const QString& key, const QString& value)
 {
+    C_RETURN_IF_OK(key.isNull() || key.isEmpty());
+
     const int c = mHeaders.size();
 
-    beginInsertRows(QModelIndex(), c, c + 1);
+    beginInsertRows(QModelIndex(), c, c);
     if (!mIdxKey.contains(key)) {
-        qInfo() << "Added header key" << key << "value" << value;
+        // qInfo() << "Added header key" << key << "value" << value;
         mHeaders.append({key, value});
     }
     endInsertRows();
@@ -55,11 +59,13 @@ void ElfHeaderModel::addRow(const QString& key, const QString& value)
 
 QVariant ElfHeaderModel::data(const QModelIndex& index, int role) const
 {
-    qInfo() << "Index: " << index.row() << " role: " << role;
     switch (index.column()) {
     case 0: {
         if (role == Qt::DisplayRole) {
             return mHeaders.at(index.row()).first;
+        }
+        else if (role == Qt::TextAlignmentRole) {
+            return QVariant(Qt::AlignHCenter | Qt::AlignRight);
         }
         break;
     }

@@ -18,8 +18,10 @@ public:
     void parseFile (const QString& fileName);
 
 private:
+    qint64                          mFileSize{};
     const qint32                    mMinWidth = 400;
-    QLabel*                         mFilePath;
+    QLabel*                         mFilePathLabel = nullptr;
+    QLabel*                         mFileSizeLabel = nullptr;
     ElfHeaderModel*                 mElfHeaderModel;
 
 };

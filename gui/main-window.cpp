@@ -6,6 +6,7 @@
 
 #include <QFile>
 #include <QLabel>
+#include <QGridLayout>
 #include <QHeaderView>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
@@ -30,18 +31,29 @@ MainWindow::MainWindow(QWidget * parent)
     auto centralWidget = new QWidget;
     auto mainLayout = new QVBoxLayout();
 
+    auto headerLayout = new QGridLayout;
+
     // file path
-    auto phl = new QHBoxLayout;
     auto pl = new QLabel;
     pl->setAlignment(Qt::AlignLeft);
     pl->setText(tr("ELF File: "));
 
-    mFilePath = new QLabel;
-    mFilePath->setAlignment(Qt::AlignLeft);
-    phl->addWidget(pl);
-    phl->addWidget(mFilePath);
-    phl->addStretch();
-    mainLayout->addLayout(phl);
+    mFilePathLabel = new QLabel;
+    mFilePathLabel->setAlignment(Qt::AlignLeft);
+    headerLayout->addWidget(pl, 1, 1, 1, 1, Qt::AlignLeft);
+    headerLayout->addWidget(mFilePathLabel, 1, 2, 1, 11, Qt::AlignLeft);
+
+    // file size
+    auto sl = new QLabel;
+    sl->setAlignment(Qt::AlignLeft);
+    sl->setText(tr("File Size: "));
+
+    mFileSizeLabel = new QLabel;
+    mFileSizeLabel->setAlignment(Qt::AlignLeft);
+    headerLayout->addWidget(sl, 2, 1, 1, 1, Qt::AlignLeft);
+    headerLayout->addWidget(mFileSizeLabel, 2, 2, 1, 11, Qt::AlignLeft);
+
+    mainLayout->addLayout(headerLayout);
 
     // title
     auto label = new QLabel(tr("ELF file header: "));
@@ -66,12 +78,16 @@ MainWindow::MainWindow(QWidget * parent)
 
 void MainWindow::parseFile(const QString& fileName)
 {
-    mFilePath->setText(fileName);
+    C_RETURN_IF_OK(fileName.isNull() || fileName.isEmpty() || !QFile::exists(fileName));
+
+    mFilePathLabel->setText(fileName);
 
     int fd = 0;
     void* fAddr = nullptr;
     QFile file(fileName);
-    qint64 fSize = file.size();
+    mFileSize = file.size();
+    mFileSizeLabel->setText(QString("%1 (%2)").arg(mFileSize).arg(QLocale().formattedDataSize(mFileSize)));
+
 
     // TODO:// 检查文件是否存在
     // TODO:// 检查是否是文件
@@ -81,7 +97,7 @@ void MainWindow::parseFile(const QString& fileName)
         fd = open(file.fileName().toUtf8().constData(), O_RDONLY);
         C_BREAK_IF_FAIL(fd >=0);
 
-        fAddr = mmap(nullptr, fSize, PROT_READ, MAP_PRIVATE, fd, 0);
+        fAddr = mmap(nullptr, mFileSize, PROT_READ, MAP_PRIVATE, fd, 0);
         C_BREAK_IF_OK(MAP_FAILED == fAddr);
 
         // 读取 ELF 头
@@ -390,5 +406,5 @@ void MainWindow::parseFile(const QString& fileName)
     if (fd >= 0) {
         ::close(fd);
     }
-    C_FREE_FUNC(fAddr, munmap, fSize);
+    C_FREE_FUNC(fAddr, munmap, mFileSize);
 }
